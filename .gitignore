@@ -1,0 +1,10 @@
+# Ignore everything
+*
+
+
+# Exclude specific files or directories
+!.gitignore
+!src/
+!src/** 
+!*.json
+!README.md
