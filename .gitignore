@@ -8,3 +8,6 @@
 !src/** 
 !*.json
 !README.md
+!docker-compose.yml
+!Dockerfile
+!init.sql

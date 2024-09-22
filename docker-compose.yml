@@ -1,0 +1,46 @@
+version: "3.8"
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD} # Root password
+      MYSQL_DATABASE: ${MYSQL_DATABASE} # Database name
+      MYSQL_USER: ${MYSQL_USER} # New user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD} # New user password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - database_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      target: production # Path to the Node.js Dockerfile
+    container_name: Database-backend
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${MYSQL_USER} # Use the new user instead of root
+      DB_PASSWORD: ${MYSQL_PASSWORD} # Password for the new user
+      DB_DATABASE: ${DB_DATABASE}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5000:5000" # Expose the backend's port
+    volumes:
+      - ./src:/usr/src/app/src
+
+    networks:
+      - database_net
+
+networks:
+  database_net:
+    driver: bridge
