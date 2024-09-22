@@ -23,6 +23,11 @@ export interface loginData {
   password: string;
 }
 
+export interface loginResponse {
+  user: PublicUserData;
+  token: string;
+}
+
 export interface registerData {
   username: string;
   pass: string;

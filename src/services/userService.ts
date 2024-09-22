@@ -1,13 +1,20 @@
 import { Op, Optional } from "sequelize";
 import User from "../models/userModel";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
 import {
   loginData,
-  PublicUserData,
+  loginResponse,
   publicUserAttibutes,
   makePublicUserData,
   registerData,
 } from "../Types/userInterface";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const secret = process.env.JWT_SECRET;
 
 // FALTA COMPROBAR QUE LA CONTRASEÑA SEA SEGURA
 export const register = async (userData: Optional<User, "peso">) => {
@@ -64,20 +71,32 @@ const doesUserAlreadyExists = async (user: registerData) => {
 export const login = async ({
   email,
   password,
-}: loginData): Promise<PublicUserData | string> => {
+}: loginData): Promise<loginResponse | string> => {
   // PUBLICUSERDATA DELIMITA LO QUE PUEDE RETORNAR ESTA FUNCION
-  const user = await User.findOne({
-    where: { correo: email },
-  });
-  if (!user) return "User not found";
-  else {
+  try {
+    const user = await User.findOne({ where: { correo: email } });
+    if (!user) throw new Error("User not found");
+
     const isValid = await bcrypt.compare(password, user.pass);
-    if (!isValid) return "Invalid password";
-    else {
-      // aqui se extraen los campos que estan en publicUserAttributes de user
-      const publicUser = makePublicUserData(user, publicUserAttibutes);
-      return publicUser;
+    if (!isValid) throw new Error("Invalid password");
+
+    // Generate JWT
+    if (!secret) throw new Error("No secret provided for JWT");
+    const token = jwt.sign(
+      { id: user.id, username: user.username, email: user.correo },
+      secret,
+      { expiresIn: "15m" }
+    );
+    // aqui se extraen los campos que estan en publicUserAttributes de user
+    const publicUser = makePublicUserData(user, publicUserAttibutes);
+
+    return { user: publicUser, token };
+  } catch (error) {
+    if (error instanceof Error) {
+      console.log("Problem while login user, cause:", error);
+      return `Problem while login user, cause:, ${error.message}`;
     }
+    return "Problem while login user";
   }
 };
 
