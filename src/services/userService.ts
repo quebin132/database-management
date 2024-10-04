@@ -9,6 +9,7 @@ import {
   publicUserAttibutes,
   makePublicUserData,
   registerData,
+  registerResponse,
 } from "../Types/userInterface";
 import dotenv from "dotenv";
 
@@ -17,16 +18,29 @@ dotenv.config();
 const secret = process.env.JWT_SECRET;
 
 // FALTA COMPROBAR QUE LA CONTRASEÑA SEA SEGURA
-export const register = async (userData: Optional<User, "peso">) => {
+export const register = async (
+  userData: Optional<User, "peso">
+): Promise<registerResponse> => {
   console.log("entering services");
   console.log(userData);
-  const validation = await doesUserAlreadyExists(userData);
-  if (validation) return validation;
-  else {
+  try {
+    await doesUserAlreadyExists(userData);
+
     const hashedPassword = await bcrypt.hash(userData.pass, 10);
     const newUserData = { ...userData, pass: hashedPassword };
     await User.create(newUserData);
-    return "Register completed";
+    console.log("register completed");
+    return { success: true, message: "Register completed" };
+  } catch (e) {
+    if (e instanceof Error) {
+      return {
+        success: false,
+        message: "Error during registration",
+        error: e.message,
+      };
+    } else {
+      return { success: false, message: "Unknown error ocurred", error: "idk" };
+    }
   }
 };
 
@@ -51,16 +65,22 @@ const doesUserAlreadyExists = async (user: registerData) => {
     if (foundUser) {
       const foundNumber = Number(foundUser.telefono);
       if (foundUser.username === user.username)
-        return "Username already exists";
-      if (foundUser.correo === user.correo) return "E-mail already in use";
+        throw new Error("Username already exists");
+      if (foundUser.correo === user.correo)
+        throw new Error("E-mail already in use");
       if (foundNumber === user.telefono)
-        return "That phone number is already registered";
+        throw new Error("That phone number is already registered");
     }
 
     return false;
   } catch (error) {
-    console.error("Problem checking user existence:", error);
-    return "An error occurred while checking for existing users.";
+    if (error instanceof Error) {
+      console.error("Problem checking user existence:", error);
+      throw new Error(error.message);
+    } else {
+      console.log("idk");
+      return "idk";
+    }
   }
 };
 

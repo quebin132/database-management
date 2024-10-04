@@ -4,12 +4,15 @@ import { register, login } from "../services/userService";
 export const registerUser = async (req: Request, res: Response) => {
   console.log("entering controller");
   try {
-    const user = await register(req.body);
-    res.status(201).json(user);
+    const result = await register(req.body);
+    // MANEJAR ERROR EN VALIDACION
+    if (result.success) res.status(201).json(result);
+    else res.status(409).json(result);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      res.status(400).json({ message: error.message });
-    }
+      console.error("Error in controler");
+      res.status(500).json("Server Error");
+    } else console.error("Unknown error in controller");
   }
 };
 
@@ -28,7 +31,7 @@ export const logUser = async (req: Request, res: Response) => {
     const { user, token } = result;
     res.cookie("token", token, {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "none",
       maxAge: 15 * 60 * 1000, // Expires in 15 minutes
     });
     return res.status(200).json(user);

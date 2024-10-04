@@ -36,6 +36,12 @@ export interface registerData {
   peso?: number;
 }
 
+export type registerResponse = {
+  success: boolean;
+  message: string;
+  error?: string;
+};
+
 // ESTA WEA TOMA EL USER Y LE QUITA TODAS LAS KEYS QUE NO SON PUBLICAS
 export function makePublicUserData<T extends object, K extends keyof T>(
   user: T,
